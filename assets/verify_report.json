@@ -1,0 +1,22 @@
+{
+  "classroom_empty": {
+    "persons": 0,
+    "raw_persons": 0,
+    "filtered_out": 0,
+    "occupied": 0,
+    "total_seats": 16,
+    "seat_source": "perspective_grid_4x4",
+    "fps": 0.24,
+    "frame_ms": 4175.9
+  },
+  "classroom_crowded": {
+    "persons": 23,
+    "raw_persons": 23,
+    "filtered_out": 0,
+    "occupied": 11,
+    "total_seats": 16,
+    "seat_source": "perspective_grid_4x4",
+    "fps": 9.21,
+    "frame_ms": 108.5
+  }
+}

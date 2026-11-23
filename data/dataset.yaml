@@ -1,0 +1,10 @@
+# YOLO 格式数据集配置（从 COCO person 类抽取，见 data/prepare_dataset.py）
+# 使用时把 path 改为你自己的数据目录
+path: ../data
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names:
+  0: person

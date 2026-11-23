@@ -1,0 +1,57 @@
+{
+  "A_baseline": {
+    "variant": "A_baseline",
+    "weights": "D:\\gg\\yolo26n.pt",
+    "map50": 0.0,
+    "map50_95": 0.0,
+    "note": "未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值",
+    "fps": 22.81,
+    "persons": 3,
+    "occupied": 0,
+    "total_seats": 16
+  },
+  "B1_augment": {
+    "variant": "B1_augment",
+    "weights": "D:\\gg\\yolo26n.pt",
+    "map50": 0.0,
+    "map50_95": 0.0,
+    "note": "未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值 B1权重未找到，已回退基线权重；请先运行 python scripts/train.py --augment mosaic_strong --name B1_augment",
+    "fps": 21.59,
+    "persons": 3,
+    "occupied": 0,
+    "total_seats": 16
+  },
+  "B2_track": {
+    "variant": "B2_track",
+    "weights": "D:\\gg\\yolo26n.pt",
+    "map50": 0.0,
+    "map50_95": 0.0,
+    "note": "未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值",
+    "fps": 22.85,
+    "persons": 3,
+    "occupied": 0,
+    "total_seats": 16
+  },
+  "B3_center_roi": {
+    "variant": "B3_center_roi",
+    "weights": "D:\\gg\\yolo26n.pt",
+    "map50": 0.0,
+    "map50_95": 0.0,
+    "note": "未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值",
+    "fps": 22.27,
+    "persons": 3,
+    "occupied": 3,
+    "total_seats": 16
+  },
+  "B_all": {
+    "variant": "B_all",
+    "weights": "D:\\gg\\yolo26n.pt",
+    "map50": 0.0,
+    "map50_95": 0.0,
+    "note": "未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值 B1权重未找到，已回退基线权重；请先运行 python scripts/train.py --augment mosaic_strong --name B1_augment",
+    "fps": 22.68,
+    "persons": 3,
+    "occupied": 3,
+    "total_seats": 16
+  }
+}

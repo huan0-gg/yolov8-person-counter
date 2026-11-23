@@ -1,0 +1,17 @@
+# YOLOv8 Person Counter - 教室/会议室人员统计与座位占用检测
+# 安装: uv pip install -r requirements.txt  (或 pip install -r requirements.txt)
+ultralytics>=8.1.0
+opencv-python-headless>=4.9.0
+numpy>=2.0.0
+pandas>=2.2.3
+pyarrow>=17.0.0
+matplotlib>=3.7.0
+gradio>=4.0.0
+pycocotools>=2.0.7
+PyYAML>=6.0
+Pillow>=10.0.0
+
+# 说明：
+# - 新版 ultralytics / gradio 依赖 numpy>=2，故 pandas、pyarrow 必须选支持 numpy 2 的版本，
+#   否则会出现 "numpy.core.multiarray failed to import" 错误。上面已锁定兼容版本。
+# - 若机器无 GPU，检测器会自动降级到 CPU（见 src/detector.py 的 device 处理）。
