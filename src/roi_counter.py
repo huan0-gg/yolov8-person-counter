@@ -20,11 +20,20 @@ def _bbox_area(b: Box) -> float:
 
 
 def filter_valid_detections(
-    detections: List[Dict[str, Any]], shape: Tuple[int, ...], min_area_ratio: float = 0.002
+    detections: List[Dict[str, Any]],
+    shape: Tuple[int, ...],
+    min_area_ratio: float = 0.002,
+    aspect_range: Tuple[float, float] = (0.30, 5.0),
 ) -> List[Dict[str, Any]]:
-    """过滤无效人员框：面积过小、宽高比异常、中心在画面外。"""
+    """过滤无效人员框：面积过小、宽高比异常、中心在画面外。
+
+    aspect_range: 允许的 高/宽 范围。坐着的人、被桌子挡住的人框会明显偏"扁"，
+    v2.2 把下限从 0.5 放宽到 0.30（实测漏检主要来自这里），上限从 4.0 放宽到 5.0
+    以容纳站立俯拍角度。
+    """
     h, w = shape[:2]
     min_area = min_area_ratio * w * h
+    lo, hi = float(aspect_range[0]), float(aspect_range[1])
     valid: List[Dict[str, Any]] = []
     for det in detections:
         x1, y1, x2, y2 = det["bbox"]
@@ -35,8 +44,7 @@ def filter_valid_detections(
         if bh < 1 or bw < 1:
             continue
         ratio = bh / bw
-        # 人形框通常是竖长条；坐姿会矮一些，放宽到 [0.5, 4.0]
-        if ratio < 0.5 or ratio > 4.0:
+        if ratio < lo or ratio > hi:
             continue
         cx, cy = det["center"]
         if not (0 <= cx <= w and 0 <= cy <= h):
@@ -89,6 +97,7 @@ class SeatROICounter:
         mode: str = "center",
         overlap_threshold: float = 0.30,
         min_area_ratio: float = 0.002,
+        aspect_range: Tuple[float, float] = (0.30, 5.0),
     ) -> None:
         if mode not in ("center", "overlap"):
             raise ValueError("count_mode 只能是 center 或 overlap")
@@ -96,12 +105,15 @@ class SeatROICounter:
         self.mode = mode
         self.overlap_threshold = overlap_threshold
         self.min_area_ratio = min_area_ratio
+        self.aspect_range = aspect_range
 
     def count(
         self, detections: List[Dict[str, Any]], shape: Tuple[int, ...]
     ) -> Dict[str, Any]:
         seat_boxes, seat_source = build_seats(self.cfg, shape)
-        valid_dets = filter_valid_detections(detections, shape, self.min_area_ratio)
+        valid_dets = filter_valid_detections(
+            detections, shape, self.min_area_ratio, self.aspect_range
+        )
         img_area = float(shape[0] * shape[1])
 
         occupied = [False] * len(seat_boxes)

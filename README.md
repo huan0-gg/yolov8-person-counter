@@ -1,9 +1,26 @@
-# YOLOv8 人员到岗统计与座位占用检测系统 · v2.0
+# YOLOv8 人员到岗统计与座位占用检测系统 · v2.2
 
 > 课程项目交付标准：**能看、能跑、能对比、能复述**
 > 用真实运行与实验验证支撑每一个结论，所有改进都留下可复核的证据。
 
-> ## 🆕 v2.0 升级（2026-11-24）：从"能演示"到"能证明"
+> ## 🆕 v2.2 升级（2026-11-24）：指定区域标注 + 检测误差实测下降
+> 三件事：**① 结果图能标出"要管的区域"**（多边形/矩形，带区域内人数，区域外压暗可选）；
+> **② 检测逻辑重做后处理**（多尺度融合 + 嵌套框去重 + 放宽坐姿宽高比）；
+> **③ 补一套检测级评测**，把"误检/漏检"从形容词变成数字。
+>
+> 22 张验证集 / 179 个标注，同一权重，只改推理侧策略：
+>
+> | 版本 | Precision | Recall | F1 | AP@0.5 | 误检 FP | 漏检 FN |
+> |---|---|---|---|---|---|---|
+> | v2.1 基线 | 0.8692 | 0.6313 | 0.7314 | 0.6216 | 17 | 66 |
+> | **v2.2 默认** | 0.8788 | **0.8101** | **0.8430** | **0.7861** | 20 | **34** |
+> | **v2.2 区域模式** | **0.9329** | 0.7765 | **0.8476** | 0.7613 | **10** | 40 |
+>
+> 漏检 **−48%**、F1 **+15.3%**、AP@0.5 **+26.5%**；开启区域过滤后误检再降 **41%**。
+> 全部数字由 `scripts/eval_detection.py` 产出，报告见 [`docs/EVAL_v2.2.md`](docs/EVAL_v2.2.md)，
+> 区域用法见 [`docs/REGION.md`](docs/REGION.md)。
+
+> ## v2.0 升级（2026-11-24）：从"能演示"到"能证明"
 > 保持原目标不变，补齐三项短板：**数据支撑**（可复现数据集 + 数据卡）、**训练闭环**
 > （真实训练 + 权重 + 曲线 + 验证报告）、**展示效果**（界面新增训练证据页）。
 > 详见 [`CHANGELOG.md`](CHANGELOG.md) 与 [`data/DATA_CARD.md`](data/DATA_CARD.md)。
@@ -20,9 +37,55 @@
 
 基于 YOLOv8 的教室/会议室人员统计系统：自动检测画面中的人员，统计实时人数，并判断每个座位是否被占用。项目内置基线 A 与 3 个创新点的完整 A/B 实验流程，可一键生成对比表格和 3 条标准化创新表述。
 
+## 0. 45 秒看完这个项目
+
+[![45 秒项目短片封面](docs/video/cover.gif)](docs/video/promo_45s.mp4)
+
+**成片**：[`docs/video/promo_45s.mp4`](docs/video/promo_45s.mp4)（45s / 1280×720 / 30fps / 中文字幕 / 无音轨）
+**制作说明与分镜**：[`docs/video/VIDEO.md`](docs/video/VIDEO.md)（含每个数字的溯源与重制方法）
+
+| 你可能想问 | 一句话回答 |
+|---|---|
+| 解决了什么 | 教室/会议室到岗人数与座位占用，从"人工点名"变成"一帧出结果"，并能标出"只管这一块" |
+| 为什么值得试 | 空教室稳定 0 人；密集教室 24 人 / 占用 10 座；漏检较 v2.1 下降 48%，AP@0.5 0.6216 → 0.7861 |
+| 如何开始 | `python app.py` → 点「一键载入示例并统计」，不用先准备图片 |
+
+![Gradio 界面](docs/video/ui.png)
+
+> 片中的检测框与人数**不是画上去的**：由 `scripts/collect_promo_assets.py` 真实跑一遍流水线导出，
+> 再用 `scripts/make_promo.py` 合成。数据变了，重跑两条命令整片自动更新。
+
+
 > **v2 改进版**：修复了密集场景漏检、座位框杂乱错位、空教室框锁不住的问题。
-> 采用**透视网格座位框**替代硬编码坐标，推理参数优化使密集图检出数 13→23，框过滤+一人一座消除重复占用。
-> 详见 [`experiments/IMPROVEMENTS.md`](experiments/IMPROVEMENTS.md)（问题根因、验证结果、验证要点）。
+> 采用**透视网格座位框**替代硬编码坐标；v2.2 又把后处理换成多尺度融合 + 嵌套框去重，
+> 并把坐姿框的宽高比下限从 0.5 放宽到 0.30（实测漏检主要来自这一条）。
+> 详见 [`experiments/IMPROVEMENTS.md`](experiments/IMPROVEMENTS.md) 与 [`docs/EVAL_v2.2.md`](docs/EVAL_v2.2.md)。
+
+## 0.5 指定区域标注（v2.2 新增）
+
+只要在配置里写一个归一化多边形，结果图就会把这块区域**描边 + 半透明填充 + 贴标签**，
+标签上直接写区域内人数；区域内的人框是黄色，区域外是灰色并带 `OUT`。
+
+![指定区域标注](docs/region/after_dense.jpg)
+
+```yaml
+regions:
+  enabled: true
+  filter_outside: false      # true = 区域外检测直接丢弃（区域模式）
+  items:
+    - name: seat_zone
+      label: 监测区域
+      points: [[0.07, 0.42], [0.93, 0.42], [0.99, 0.99], [0.01, 0.99]]
+      count: true
+```
+
+换机位只改这四个点，不改代码。标定方法、多区域、压暗模式、常见坑：
+[`docs/REGION.md`](docs/REGION.md)；标定预览一条命令：
+
+```bash
+python scripts/preview_region.py --image assets/ai/classroom_seat.jpg \
+    --poly "0.01,0.30 0.99,0.27 0.99,0.99 0.01,1.00" --out preview.jpg
+```
 
 ## 1. 系统架构图
 
@@ -61,11 +124,12 @@ flowchart TD
     C --> R[读取一帧]
     R --> D{启用跟踪?}
     D -->|是| T[model.track + ByteTrack<br/>分配 track_id]
-    D -->|否| P[model.predict<br/>逐帧独立检测]
+    D -->|否| M[多尺度推理 960 / 1152<br/>WBF 融合 + 嵌套框去重]
     T --> U[按 track_id 去重]
-    P --> N[ROI 座位判定]
-    U --> N
-    N --> V[绘制座位框 / 人员框 / 统计面板]
+    M --> G[区域归属判定<br/>框内占比 ≥ min_inside_ratio]
+    U --> G
+    G --> N[ROI 座位判定<br/>一人一座]
+    N --> V[绘制区域 / 座位框 / 人员框 / 统计面板]
     V --> E{还有下一帧?}
     E -->|是| R
     E -->|否| F[输出统计结果与标注视频]
@@ -97,7 +161,9 @@ yolov8-person-counter/
 │   ├── prepare_dataset.py       # COCO person -> YOLO 转换（1.0 保留）
 │   └── build_dataset.py         # 🆕 v2.0 可复现数据集构建器
 ├── src/
-│   ├── detector.py              # YOLOv8 检测器封装
+│   ├── detector.py              # YOLOv8 检测器封装（多尺度 / 切片 / WBF / 嵌套框去重）
+│   ├── region.py                # 🆕 v2.2 指定区域：多边形解析、掩膜、区域归属与计数
+│   ├── metrics.py               # 🆕 v2.2 检测评测指标：TP/FP/FN 匹配、P/R/F1、AP
 │   ├── augment.py               # 创新点1：数据增强策略
 │   ├── tracker.py               # 创新点2：ByteTrack 去重
 │   ├── roi_counter.py           # 创新点3：座位判定规则
@@ -110,7 +176,27 @@ yolov8-person-counter/
 │   ├── evaluate.py              # 单方案评估
 │   ├── run_ablation.py          # A/B 实验 + 创新表述自动生成
 │   ├── build_dataset.py         # 🆕 数据集构建（也在 data/ 提供说明）
-│   └── verify_training.py       # 🆕 训练结果验证与解读
+│   ├── verify_training.py       # 🆕 训练结果验证与解读
+│   ├── collect_promo_assets.py  # 🆕 视频素材：真实跑一遍推理导出证据帧
+│   ├── make_promo.py            # 🆕 视频生成器：45s 成片 + README 封面 GIF
+│   ├── eval_detection.py        # 🆕 v2.2 检测级评测：7 个变体的 P/R/F1/FP/FN/AP
+│   ├── render_eval_report.py    # 🆕 v2.2 由评测 JSON 生成 docs/EVAL_v2.2.md
+│   ├── make_region_demo.py      # 🆕 v2.2 生成"更新前/后"区域标注对照图
+│   └── preview_region.py        # 🆕 v2.2 只渲染区域，用于快速标定
+├── tests/                       # 🆕 v2.2 单元测试（31 个）
+│   ├── test_region.py           #    区域几何 / 归属 / 过滤
+│   ├── test_detector.py         #    NMS / Soft-NMS / WBF / IoS 去重 / 切片窗口
+│   └── test_metrics.py          #    匹配与 AP 的计算口径
+├── docs/
+│   ├── REGION.md                # 🆕 v2.2 指定区域配置与标定指南
+│   ├── EVAL_v2.2.md             # 🆕 v2.2 更新前后指标对比报告
+│   ├── region/                  # 🆕 v2.2 对照图（before / after / dim / compare）
+│   └── video/                   # 🆕 宣传视频
+│       ├── promo_45s.mp4        #    成片 45s / 720p
+│       ├── cover.gif            #    README 封面动图
+│       ├── ui.png               #    界面真实截图
+│       ├── VIDEO.md             #    分镜表 + 数据溯源 + 重制指引
+│       └── evidence/            #    检测框与计数的原始 JSON + 标注图
 ├── experiments/
 │   ├── results_template.md      # 实验记录模板
 │   ├── models/                  # 🆕 训练导出的权重（供复核）
@@ -140,13 +226,17 @@ uv pip install -r requirements.txt
 python app.py
 ```
 
-浏览器打开 `http://127.0.0.1:7860`，可上传图片/视频或开启摄像头，并在下拉框切换 A/B 方案对比效果。
+浏览器打开 `http://127.0.0.1:7860`。第一次用不用准备图片：在「图片检测」页选一张**示例图**
+（v2.2 起用 `assets/ai/` 下的 AI 生成场景图，不再依赖旧截图），点 **一键载入示例并统计**，
+就能看到完整结果；也可上传自己的图片/视频或开摄像头。
+密集教室示例当前为 **24 人 / 占用 10 座**（v2.1 为 23 / 11，差异来自 v2.2 放宽的框过滤）。
 
 ### 5.3 能跑：单方案快速验证（无需训练数据）
 
 ```bash
-python scripts/evaluate.py --variant A_baseline --weights yolov8n.pt --demo-image assets/demo.jpg
-python scripts/evaluate.py --variant B2_track --weights yolov8n.pt --demo-image assets/demo.jpg
+# 不传 --weights 时跟随 configs/config.yaml（yolo26n.pt），与界面结果一致
+python scripts/evaluate.py --variant A_baseline --demo-image assets/classroom_crowded.jpg
+python scripts/evaluate.py --variant B2_track --demo-image assets/demo.jpg
 ```
 
 没有 `demo.jpg` 时脚本会自动用合成座位图测 FPS，可直接跑通全流程。
@@ -196,6 +286,26 @@ python scripts/run_ablation.py --data data/dataset.yaml --demo-image assets/demo
 ```
 
 每一步产出都有对应证据文件，详见 `experiments/results/` 与 `CHANGELOG.md`。
+
+### 5.7 v2.2 验证：测试 + 前后对比 + 对照图
+
+```bash
+# ① 单元测试（区域几何、框融合、指标口径，共 31 个）
+python -m pytest tests -q
+
+# ② 检测级评测：7 个变体跑同一批验证集，输出 P/R/F1/AP/FP/FN
+python scripts/eval_detection.py
+
+# ③ 由评测结果重新渲染报告（数字不会与代码脱节）
+python scripts/render_eval_report.py
+
+# ④ 生成"更新前 / 更新后"区域标注对照图
+python scripts/make_region_demo.py
+```
+
+> 评测需要 `data/images/val` 与 `data/labels/val`（22 张、179 个 person 框）。
+> 这两个目录不随仓库分发，按 [`data/DATA_CARD.md`](data/DATA_CARD.md) 用
+> `python scripts/build_dataset.py --seed 42 --total 100` 重新生成即可复现同一组数字。
 
 ## 6. 数据集准备
 
@@ -263,8 +373,11 @@ python data/prepare_dataset.py --coco-root D:/coco --out data --max-images 1000
 | 🆕 训练流程与产物 | `scripts/train.py` + `experiments/models/*.pt` + `*_curves.png` |
 | 🆕 结果验证 | `scripts/verify_training.py` + `training_verification.md`（6 项检查全 ✅） |
 | 🆕 版本记录 | `CHANGELOG.md`（v2.0 新增内容 / 用法 / 数据来源 / 展示效果） |
+| 🆕 项目宣传视频 | `docs/video/promo_45s.mp4` + `cover.gif` + `docs/video/VIDEO.md`（分镜/溯源/重制） |
+| 🆕 真实素材与实测证据 | 视频中的检测框由 `scripts/collect_promo_assets.py` 真实推理导出 |
+| 🆕 README 与复现入口同步 | 视频置于 README 第 0 节，附一键示例与两条重制命令 |
 
-## 10. 展示与传播建议
+## 10. 宣传视频与传播
 
 - README 置顶放架构图与 A/B 对比表，让访客 10 秒内看懂项目价值。
 - 仓库设置 License，README 加 Python/YOLOv8 badge。
@@ -274,7 +387,8 @@ python data/prepare_dataset.py --coco-root D:/coco --out data --max-images 1000
 ## 11. 实测验证记录（本机真实运行）
 
 环境：Python 3.12 / torch 2.15 CPU / ultralytics 8.4.216 / OpenCV 5.1 / Gradio 6.32 / numpy 2.5.5。
-权重：本机已有 `D:/gg/yolo26n.pt`（COCO 权重，person 为 class 0，可直接替代 yolov8n.pt）。
+权重：仓库内 `yolo26n.pt`（COCO，person = class 0）为默认演示权重，下表的 23 人 / 11 座位由它复现；
+换成 `yolov8n.pt` 会得到另一组数字（当前参数下 27 人），换权重请同步更新文档结论。
 
 用 `assets/demo.jpg`（ultralytics 自带的 COCO bus.jpg，含真实人群）实测：
 
@@ -300,8 +414,17 @@ python data/prepare_dataset.py --coco-root D:/coco --out data --max-images 1000
 **Q：没有 GPU 能跑吗？**
 可以。`config.yaml` 默认 `device: auto`，CPU 可完成推理演示；训练建议把 epochs 调小或改用轻量配置。
 
-**Q：一定要用 yolov8n.pt 吗？**
-不一定。工作区已有的 `yolo26n.pt` 也是 COCO 权重，person 同为 class 0，可直接替换 `--weights` 参数对比新旧模型性能。
+**Q：一定要用 `yolo26n.pt` 吗？**
+不是。默认用它只是为了让文档里的 23 人 / 11 座位可复现。换成 `yolov8n.pt` 同样能跑（同参数下密集教室为 27 人），
+但结论数字要跟着改——**换权重必须重跑 `scripts/collect_promo_assets.py` 与 `scripts/run_ablation.py`**，不要手工改文档。
+
+**Q：启动报 `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`？**
+这是 `bottleneck`（pandas 的可选加速库）版本太旧，会让 `import gradio` 直接崩。升到 1.4+ 即可：
+`pip install -U "bottleneck>=1.4"`（`requirements.txt` 已加该约束）。
+
+**Q：界面检出人数和命令行不一致？**
+v2.1 已修。Gradio 传进来的是 RGB，而 OpenCV 流水线按 BGR 处理，之前通道顺序不一致会少检 1–2 人
+（23 → 21）。现在 `app.py` 统一转 BGR 后再推理，界面、命令行、文档三处数字一致。
 
 **Q：检测不到人怎么办？**
 确认权重路径正确、图片中人员足够大；可在 `config.yaml` 降低 `conf`（如 0.15）后重试。`assets/demo.jpg` 来自 ultralytics 官方样例（COCO bus.jpg），是含真实人群的标准测试图；`scripts/make_demo.py` 生成的简笔画示意图仅供无网络时占位，YOLO 对简笔画不敏感属正常现象。

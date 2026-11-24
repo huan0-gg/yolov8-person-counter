@@ -10,6 +10,9 @@ gradio>=4.0.0
 pycocotools>=2.0.7
 PyYAML>=6.0
 Pillow>=10.0.0
+# bottleneck 是 pandas 的可选加速库，但 <1.4 是 numpy 1.x 编译的，
+# 会让 `import gradio` 直接崩（A module that was compiled using NumPy 1.x cannot be run）。
+bottleneck>=1.4.0
 
 # 说明：
 # - 新版 ultralytics / gradio 依赖 numpy>=2，故 pandas、pyarrow 必须选支持 numpy 2 的版本，

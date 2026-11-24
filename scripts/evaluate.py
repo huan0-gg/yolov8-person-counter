@@ -22,17 +22,19 @@ from src.utils import load_config
 def main() -> None:
     parser = argparse.ArgumentParser(description="单方案评估")
     parser.add_argument("--variant", default="A_baseline")
-    parser.add_argument("--weights", default="yolov8n.pt")
+    parser.add_argument("--weights", default=None, help="默认跟随 configs/config.yaml（yolo26n.pt）")
     parser.add_argument("--data", default=None, help="验证集 dataset.yaml")
     parser.add_argument("--demo-image", default=None, help="真实场景图片，用于计数测试")
     parser.add_argument("--repeats", type=int, default=20)
     args = parser.parse_args()
 
     cfg = load_config(ROOT / "configs" / "config.yaml")
+    # 未指定权重时跟随配置，保证输出里的 weights 字段与界面/文档一致
+    weights = args.weights or cfg["model"]["weights"]
     result = evaluate_variant(
         cfg,
         variant=args.variant,
-        weights=args.weights,
+        weights=weights,
         data=args.data,
         demo_image=args.demo_image,
         repeats=args.repeats,

@@ -1,0 +1,11 @@
+{
+  "variant": "B3_center_roi",
+  "weights": "yolo26n.pt",
+  "map50": 0.0,
+  "map50_95": 0.0,
+  "note": "未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值",
+  "fps": 30.69,
+  "persons": 23,
+  "occupied": 11,
+  "total_seats": 16
+}

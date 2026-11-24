@@ -18,6 +18,25 @@ def load_config(path: str | Path = "configs/config.yaml") -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
+def resolve_weights(weights: str | Path, root: str | Path | None = None) -> str:
+    """把相对权重名解析成仓库内的绝对路径。
+
+    ultralytics 的 YOLO("xxx.pt") 按当前工作目录查找，换个目录启动就会变成"联网下载"，
+    导致同一份配置在不同入口跑出不同结果。这里优先找仓库内同名声明的权重文件。
+    """
+    p = Path(weights)
+    if p.is_absolute():
+        return str(p)
+    candidates = [Path(__file__).resolve().parents[1] / p]
+    if root is not None:
+        candidates.insert(0, Path(root) / p)
+    candidates.append(Path.cwd() / p)
+    for c in candidates:
+        if c.exists():
+            return str(c)
+    return str(weights)
+
+
 def resolve_dataset_yaml(data: str | Path = "data/dataset.yaml") -> Path:
     """生成一份 path 为绝对路径的临时 dataset.yaml，供训练/评估可靠读取。
 

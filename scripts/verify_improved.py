@@ -15,7 +15,7 @@ from src.pipeline import PersonCountingPipeline
 from src.utils import load_config
 
 cfg = load_config(ROOT / "configs" / "config.yaml")
-WEIGHTS = r"D:\gg\yolo26n.pt"
+WEIGHTS = None  # 跟随 configs/config.yaml，保证与界面、文档一致
 OUT = ROOT / "assets"
 
 report = {}

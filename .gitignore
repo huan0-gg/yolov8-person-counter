@@ -7,8 +7,12 @@ env/
 runs/
 *.pt
 !experiments/models/*.pt
+# 演示用 COCO 权重随仓库提供，保证文档中的 23 人 / 11 座可复现
+!yolo26n.pt
 *.onnx
 *.engine
+# 答辩用 45s 短片（v3）体积较大，作为 GitHub Release 附件分发，不进版本库
+docs/video/promo_v3_45s.mp4
 data/images/
 data/labels/
 data/raw/

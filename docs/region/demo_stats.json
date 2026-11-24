@@ -1,0 +1,70 @@
+{
+  "dense": {
+    "before_persons": 15,
+    "after_persons": 21,
+    "after_inside": 12,
+    "after_outside": 9,
+    "region_only": 12,
+    "scales": [
+      960,
+      1152
+    ],
+    "before_ms": 4411.4,
+    "after_ms": 159.8,
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "seat": {
+    "before_persons": 16,
+    "after_persons": 15,
+    "after_inside": 15,
+    "after_outside": 0,
+    "region_only": 15,
+    "scales": [
+      960,
+      1152
+    ],
+    "before_ms": 111.7,
+    "after_ms": 151.3,
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "empty": {
+    "before_persons": 0,
+    "after_persons": 0,
+    "after_inside": 0,
+    "after_outside": 0,
+    "region_only": 0,
+    "scales": [
+      960,
+      1152
+    ],
+    "before_ms": 102.0,
+    "after_ms": 171.3,
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "meeting": {
+    "before_persons": 0,
+    "after_persons": 0,
+    "after_inside": 0,
+    "after_outside": 0,
+    "region_only": 0,
+    "scales": [
+      960,
+      1152
+    ],
+    "before_ms": 95.9,
+    "after_ms": 145.1,
+    "size": [
+      1920,
+      1080
+    ]
+  }
+}

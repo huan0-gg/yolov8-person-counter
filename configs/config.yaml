@@ -2,7 +2,9 @@
 # 改进：透视网格座位框、密集场景召回、框过滤去重、统一展示规则。
 
 model:
-  weights: yolov8n.pt        # 基线权重；可用 yolo26n.pt 等 COCO 权重演示
+  # 默认权重随仓库提供，保证文档里的数字（密集教室 23 人 / 占用 11 座）可复现。
+  # 换成 yolov8n.pt 会得到另一组数字（当前参数下 27 人），换权重请同步更新结论与 README。
+  weights: yolo26n.pt        # COCO 权重，person = class 0；也可用 yolov8n.pt 对比
   imgsz: 960                 # 提升小目标召回（原640漏检严重）
   conf: 0.12                 # 降低阈值，密集场景更稳（原0.25）
   iou: 0.45
@@ -10,6 +12,30 @@ model:
   classes: [0]               # COCO 类别 0 = person
   augment: false             # TTA：true 更准但更慢，视频可关
   nms_iou: 0.55              # 重复框合并阈值，越小合并越激进
+  merge: nms                 # 单程推理的融合策略：nms / wbf / soft_nms
+  ios_merge: 0.90            # 包含式去重：小框有 90% 面积落在更大框内即视为重复（0=关闭）
+
+  # v2.2 多尺度推理：同一张图在多个分辨率各跑一次，用 WBF 融合。
+  # 不同尺度能捞到对方漏掉的小目标，实测漏检 -32%、F1 +4.4pt（见 docs/EVAL_v2.2.md）
+  scales: [960, 1152]
+  scales_image: true         # 图片检测启用多尺度
+  scales_video: false        # 视频/实时默认关闭（帧率优先）
+
+  # v2.2 高精度模式：全图 + 2x2 切片推理，再用 WBF 融合重复框。
+  # 注意：在 22 张验证集与 1920x1080 场景上实测"切片反而增误检"，默认关闭；
+  # 只有在超大分辨率（4K 监控/航拍）且目标极小时才建议打开。
+  tiling:
+    enabled: false
+    image: true              # 图片检测走切片
+    video: false             # 视频/摄像头走单程（要更准可改 true，帧率会明显下降）
+    rows: 2
+    cols: 2
+    overlap: 0.20            # 切片重叠比例，给 WBF 留融合余量
+    tile_imgsz: 640          # 切片推理分辨率
+    conf_delta: 0.03         # 切片内目标更大，阈值可略降
+    full_frame: true         # 保留全图检测，防止大目标被切片切碎
+    merge: wbf               # 切片融合策略：wbf / soft_nms / nms
+    min_image_side: 900      # 最短边小于此值不切片（小图切片=放大噪声，实测掉点）
 
 # 座位框布局（改进核心）：透视网格，替代硬编码坐标
 # quad = 座位区梯形的四个归一化角点 [左上, 右上, 左下, 右下]
@@ -43,12 +69,38 @@ roi:
   count_mode: center         # center(中心落入) / overlap(重叠阈值)
   overlap_threshold: 0.30
   min_area_ratio: 0.002      # 过滤面积过小的无效人框
+  aspect_range: [0.30, 5.00] # 允许的高/宽比（v2.2 由 [0.5, 4.0] 放宽，减少坐姿漏检）
+
+# v2.2 指定区域：在检测结果里明确标出"要管的范围"，并统计区域内人数
+# 坐标全部归一化到 0~1，与分辨率无关；可写多边形 points 或矩形 rect
+regions:
+  enabled: true
+  min_inside_ratio: 0.60     # 框内面积被区域覆盖多少才算"区域内"
+  filter_outside: false      # true = 直接丢弃区域外检测（可压掉海报/路人误检）
+  items:
+    - name: seat_zone
+      label: 监测区域
+      points:                # 多边形：左上 → 右上 → 右下 → 左下
+        - [0.07, 0.42]
+        - [0.93, 0.42]
+        - [0.99, 0.99]
+        - [0.01, 0.99]
+      color: [170, 212, 45]  # BGR 青绿
+      count: true
+    # 再要一个区域就复制上面这段，例如"讲台区"：
+    # - name: podium
+    #   label: 讲台区
+    #   rect: [0.34, 0.10, 0.66, 0.38]
+    #   color: [60, 190, 250]
+    #   count: true
 
 # 统一展示规则
 display:
   show_person_boxes: true
   show_seat_ids: true
   show_panel: true
+  show_regions: true         # 在结果图上标注指定区域
+  dim_outside: false         # true = 区域外压暗，评估时可一眼看清监测范围
 
 # 创新点 2：ByteTrack 跟踪去重
 track:
