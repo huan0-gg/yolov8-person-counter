@@ -6,11 +6,13 @@ venv/
 env/
 runs/
 *.pt
+!experiments/models/*.pt
 *.onnx
 *.engine
 data/images/
 data/labels/
 data/raw/
+data/dataset_runtime.yaml
 .DS_Store
 .idea/
 .vscode/

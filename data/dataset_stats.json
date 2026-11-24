@@ -1,0 +1,12 @@
+{
+  "seed": 42,
+  "annotator": "yolo26n.pt",
+  "conf": 0.3,
+  "background": "assets\\classroom_empty.jpg",
+  "person_source": "assets\\demo.jpg",
+  "person_patches": 4,
+  "train_images": 84,
+  "val_images": 22,
+  "total_person_boxes": 801,
+  "empty_images": 0
+}

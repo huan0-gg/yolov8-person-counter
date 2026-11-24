@@ -1,11 +1,10 @@
 {
   "variant": "A_baseline",
-  "weights": "D:\\gg\\yolo26n.pt",
-  "map50": 0.0,
-  "map50_95": 0.0,
-  "note": "未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值",
-  "fps": 43.43,
-  "persons": 4,
-  "occupied": 0,
+  "weights": "experiments/models/A_baseline_best.pt",
+  "map50": 0.9948,
+  "map50_95": 0.8932,
+  "fps": 20.49,
+  "persons": 13,
+  "occupied": 2,
   "total_seats": 16
 }

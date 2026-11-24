@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 
 from .pipeline import PersonCountingPipeline
-from .utils import load_config
+from .utils import load_config, resolve_dataset_yaml
 
 try:
     from ultralytics import YOLO
@@ -48,9 +48,17 @@ def evaluate_variant(
     # 1) 精度：需要验证集
     if data and Path(data).exists():
         model = YOLO(weights)
-        metrics = model.val(
-            data=data, device=cfg["model"].get("device", "cpu"), verbose=False
-        )
+        resolved_data = str(resolve_dataset_yaml(data))
+        device = cfg["model"].get("device", "cpu")
+        # 无 CUDA 时 device=auto 会报错，统一降级到 CPU
+        try:
+            import torch
+
+            if device in ("auto", "cuda", "0") and not torch.cuda.is_available():
+                device = "cpu"
+        except ImportError:
+            device = "cpu"
+        metrics = model.val(data=resolved_data, device=device, verbose=False)
         result["map50"] = round(float(metrics.box.map50), 4)
         result["map50_95"] = round(float(metrics.box.map), 4)
     else:

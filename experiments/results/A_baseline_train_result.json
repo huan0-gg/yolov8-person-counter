@@ -1,0 +1,16 @@
+{
+  "name": "A_baseline",
+  "augment": "default",
+  "epochs": 12,
+  "imgsz": 416,
+  "batch": 8,
+  "train_seconds": 75.5,
+  "map50": 0.9948,
+  "map50_95": 0.8932,
+  "precision": 0.9877,
+  "recall": 0.9944,
+  "weights": "experiments\\models\\A_baseline_best.pt",
+  "loss_curve": "experiments\\results\\A_baseline_curves.png",
+  "results_csv": "runs\\train\\A_baseline\\results.csv",
+  "dataset_note": "指标基于 data/DATA_CARD.md 所述合成+真实对照数据集"
+}

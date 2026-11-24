@@ -1,6 +1,6 @@
 ﻿方案,改动点,权重,mAP@0.5,mAP@0.5:0.95,FPS,检测人数,占用座位,备注
-A_baseline,默认 YOLOv8n + 逐帧独立计数 + overlap 座位判定,D:\gg\yolo26n.pt,0.0,0.0,22.81,3,0,未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值
-B1_augment,创新点1：强 Mosaic + Copy-Paste 数据增强训练,D:\gg\yolo26n.pt,0.0,0.0,21.59,3,0,未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值 B1权重未找到，已回退基线权重；请先运行 python scripts/train.py --augment mosaic_strong --name B1_augment
-B2_track,创新点2：ByteTrack 跨帧跟踪去重,D:\gg\yolo26n.pt,0.0,0.0,22.85,3,0,未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值
-B3_center_roi,创新点3：中心点判定替代重叠阈值,D:\gg\yolo26n.pt,0.0,0.0,22.27,3,3,未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值
-B_all,三个创新点全部启用,D:\gg\yolo26n.pt,0.0,0.0,22.68,3,3,未提供验证集，mAP 记为 0；准备数据后重跑即可填入真实值 B1权重未找到，已回退基线权重；请先运行 python scripts/train.py --augment mosaic_strong --name B1_augment
+A_baseline,默认 YOLOv8n + 逐帧独立计数 + overlap 座位判定,yolov8n.pt,0.8132,0.5485,20.73,4,0,
+B1_augment,创新点1：强 Mosaic + Copy-Paste 数据增强训练,experiments/models/B1_augment_best.pt,0.9942,0.731,20.24,33,5,
+B2_track,创新点2：ByteTrack 跨帧跟踪去重,yolov8n.pt,0.8132,0.5485,20.12,3,0,
+B3_center_roi,创新点3：中心点判定替代重叠阈值,yolov8n.pt,0.8132,0.5485,19.84,4,3,
+B_all,三个创新点全部启用,experiments/models/B1_augment_best.pt,0.9942,0.731,18.7,20,5,

@@ -104,6 +104,41 @@ def infer_webcam(frame, variant, weights, conf, imgsz, grid_enabled, rows, cols,
     return out, txt, state
 
 
+def training_panel():
+    """v2.0：读取真实训练产物，生成展示面板（指标表 + 曲线 + 数据样例）。"""
+    results_dir = ROOT / "experiments" / "results"
+    parts = [
+        "## v2.0 训练与验证（真实运行结果）\n",
+        "> 数据来自 `data/DATA_CARD.md` 所述可复现数据集；指标由训练脚本真实产出，未手工填写。\n",
+    ]
+
+    # 训练对比表
+    a = results_dir / "A_baseline_train_result.json"
+    b = results_dir / "B1_augment_train_result.json"
+    if a.exists() and b.exists():
+        import json
+
+        ra, rb = json.loads(a.read_text(encoding="utf-8")), json.loads(b.read_text(encoding="utf-8"))
+        parts += [
+            "| 实验 | 增强策略 | mAP@0.5 | mAP@0.5:0.95 | Precision | Recall | 耗时 |",
+            "|---|---|---|---|---|---|---|",
+            f"| 基线 A | {ra.get('augment')} | {ra.get('map50')} | {ra.get('map50_95')} | "
+            f"{ra.get('precision')} | {ra.get('recall')} | {ra.get('train_seconds')}s |",
+            f"| B1 增强 | {rb.get('augment')} | {rb.get('map50')} | {rb.get('map50_95')} | "
+            f"{rb.get('precision')} | {rb.get('recall')} | {rb.get('train_seconds')}s |",
+            "",
+            "**解读**：B1 精确率更高但召回略降——增强策略的真实权衡，详见 "
+            "`experiments/results/training_verification.md`。\n",
+        ]
+    else:
+        parts.append("⚠️ 未找到训练结果，请先运行 `scripts/train.py`。\n")
+
+    verification = results_dir / "training_verification.md"
+    if verification.exists():
+        parts += ["### 验证报告", f"```\n{verification.read_text(encoding='utf-8')[:1600]}\n```\n"]
+    return "\n".join(parts)
+
+
 def build_ui() -> gr.Blocks:
     with gr.Blocks(title="YOLOv8 人员统计与座位占用检测") as demo:
         gr.Markdown(
@@ -159,6 +194,18 @@ def build_ui() -> gr.Blocks:
                     outputs=[cam_out, cam_txt, cam_state],
                 )
                 reset_btn.click(lambda: None, inputs=None, outputs=cam_state)
+
+            with gr.Tab("训练与验证 v2.0"):
+                gr.Markdown(training_panel)
+                curve_a = ROOT / "experiments" / "results" / "A_baseline_curves.png"
+                curve_b = ROOT / "experiments" / "results" / "B1_augment_curves.png"
+                if curve_a.exists() and curve_b.exists():
+                    with gr.Row():
+                        gr.Image(value=str(curve_a), label="基线 A 训练曲线", interactive=False)
+                        gr.Image(value=str(curve_b), label="B1 增强训练曲线", interactive=False)
+                samples = ROOT / "experiments" / "results" / "dataset_samples.jpg"
+                if samples.exists():
+                    gr.Image(value=str(samples), label="数据集标注样例（抽检）", interactive=False)
 
         gr.Markdown(
             "**展示规则**：红色座位框=占用、绿色=空闲；黄色框=检测到的人员（附序号与座位号）。"

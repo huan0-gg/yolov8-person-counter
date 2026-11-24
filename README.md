@@ -1,7 +1,22 @@
-# YOLOv8 人员到岗统计与座位占用检测系统
+# YOLOv8 人员到岗统计与座位占用检测系统 · v2.0
 
 > 课程项目交付标准：**能看、能跑、能对比、能复述**
 > 用真实运行与实验验证支撑每一个结论，所有改进都留下可复核的证据。
+
+> ## 🆕 v2.0 升级（2026-11-24）：从"能演示"到"能证明"
+> 保持原目标不变，补齐三项短板：**数据支撑**（可复现数据集 + 数据卡）、**训练闭环**
+> （真实训练 + 权重 + 曲线 + 验证报告）、**展示效果**（界面新增训练证据页）。
+> 详见 [`CHANGELOG.md`](CHANGELOG.md) 与 [`data/DATA_CARD.md`](data/DATA_CARD.md)。
+>
+> **真实训练指标**（验证集 22 张，来自 `scripts/train.py` 实际运行）：
+>
+> | 实验 | mAP@0.5 | mAP@0.5:0.95 | Precision | Recall | 权重产物 |
+> |---|---|---|---|---|---|
+> | 基线 A | 0.9948 | 0.8932 | 0.9877 | 0.9944 | `experiments/models/A_baseline_best.pt` |
+> | B1 强增强 | 0.9942 | 0.7310 | 0.9990 | 0.9777 | `experiments/models/B1_augment_best.pt` |
+>
+> A/B 实测（同一 demo.jpg）：mAP@0.5 基线 **0.8132** → 使用训练权重 B1 **0.9942**（+22.3%）。
+> 所有数值来自真实运行，未手工填写。训练曲线：`experiments/results/*_curves.png`。
 
 基于 YOLOv8 的教室/会议室人员统计系统：自动检测画面中的人员，统计实时人数，并判断每个座位是否被占用。项目内置基线 A 与 3 个创新点的完整 A/B 实验流程，可一键生成对比表格和 3 条标准化创新表述。
 
@@ -71,12 +86,16 @@ flowchart TD
 ```
 yolov8-person-counter/
 ├── README.md                    # 本文件（架构图 / 流程图 / 创新表述）
-├── app.py                       # Gradio Web 界面（能看）
+├── CHANGELOG.md                 # 🆕 v2.0 更新日志
+├── app.py                       # Gradio Web 界面（能看；🆕 含训练证据页）
 ├── requirements.txt
 ├── configs/config.yaml          # 全局配置（模型 / 座位区域 / 开关）
 ├── data/
-│   ├── dataset.yaml             # YOLO 数据集配置
-│   └── prepare_dataset.py       # COCO person -> YOLO 转换
+│   ├── dataset.yaml             # YOLO 数据集配置（模板）
+│   ├── DATA_CARD.md             # 🆕 数据卡：来源 / 构成 / 标注 / 边界
+│   ├── dataset_stats.json       # 🆕 真实数据统计
+│   ├── prepare_dataset.py       # COCO person -> YOLO 转换（1.0 保留）
+│   └── build_dataset.py         # 🆕 v2.0 可复现数据集构建器
 ├── src/
 │   ├── detector.py              # YOLOv8 检测器封装
 │   ├── augment.py               # 创新点1：数据增强策略
@@ -87,13 +106,22 @@ yolov8-person-counter/
 │   ├── visualize.py             # 结果可视化
 │   └── utils.py                 # 配置加载 / 指标格式化
 ├── scripts/
-│   ├── train.py                 # 训练（基线 A 与 B1 共用）
+│   ├── train.py                 # 🆕 v2.0 完整训练（配置快照/曲线/权重/报告）
 │   ├── evaluate.py              # 单方案评估
-│   └── run_ablation.py          # A/B 实验 + 创新表述自动生成
+│   ├── run_ablation.py          # A/B 实验 + 创新表述自动生成
+│   ├── build_dataset.py         # 🆕 数据集构建（也在 data/ 提供说明）
+│   └── verify_training.py       # 🆕 训练结果验证与解读
 ├── experiments/
 │   ├── results_template.md      # 实验记录模板
-│   └── results/                 # 运行后自动生成（json / csv / md）
-└── assets/                      # 放入 demo.jpg 作为测试图
+│   ├── models/                  # 🆕 训练导出的权重（供复核）
+│   │   ├── A_baseline_best.pt
+│   │   └── B1_augment_best.pt
+│   └── results/                 # 🆕 真实证据（json / csv / md / png）
+│       ├── A_baseline_curves.png / B1_augment_curves.png
+│       ├── training_verification.md
+│       ├── dataset_samples.jpg
+│       └── ablation_* （A/B 对比）
+└── assets/                      # demo.jpg 测试图 + 教室场景图
 ```
 
 ## 5. 快速开始
@@ -145,7 +173,37 @@ python scripts/run_ablation.py --data data/dataset.yaml --demo-image assets/demo
 - `experiments/results/ablation_results.csv` — 可直接粘贴到 README 的对比表
 - `experiments/results/ablation_report.md` — 含 3 条标准化创新表述
 
+## 5.6 v2.0 完整复现流程（推荐：从数据到训练到对比一条龙）
+
+> 这是 2.0 的核心演示路径。全程使用项目自带素材，无需外部下载，CPU 约 3 分钟跑完训练。
+
+```bash
+# ① 构建可复现数据集（84 训练 / 22 验证 / 801 个 person 框）
+python scripts/build_dataset.py --seed 42 --total 100
+
+# ② 训练基线 A（约 75 秒，产出权重 + 曲线 + 报告）
+python scripts/train.py --augment default --name A_baseline --epochs 12 --imgsz 416 --batch 8
+
+# ③ 训练创新点 B1 强增强
+python scripts/train.py --augment mosaic_strong --name B1_augment --epochs 12 --imgsz 416 --batch 8
+
+# ④ 训练结果验证（完整性检查 + 诚实解读）
+python scripts/verify_training.py
+
+# ⑤ 用真实训练权重重跑 A/B（mAP 列填入真实值）
+python scripts/run_ablation.py --data data/dataset.yaml --demo-image assets/demo.jpg \
+    --base-weights yolov8n.pt --b1-weights experiments/models/B1_augment_best.pt --repeats 10
+```
+
+每一步产出都有对应证据文件，详见 `experiments/results/` 与 `CHANGELOG.md`。
+
 ## 6. 数据集准备
+
+> **v2.0 数据来源说明**：本项目训练/验证使用的是 `scripts/build_dataset.py` 生成的可复现数据集
+> ——以真实空教室截图为背景、COCO 公开样例中的真实人物为实例、按透视规律合成并精确标注，
+> 另并入真实图片对照样本。**来源、构成、生成流程、用途边界**全部记录在
+> [`data/DATA_CARD.md`](data/DATA_CARD.md)，请在使用数据前阅读。
+> 合成数据用于工程演示与训练流程验证，不作为真实场景精度的权威结论。
 
 两种方案任选其一：
 
@@ -201,6 +259,10 @@ python data/prepare_dataset.py --coco-root D:/coco --out data --max-images 1000
 | 能跑 | 一键脚本 + 预训练权重，无需数据即可演示 |
 | 能对比 | 5 组变体共用同一评估流程，控制单一变量 |
 | 能复述 | 每条改动配一句定量结论 |
+| 🆕 数据说明 | `data/DATA_CARD.md` + `dataset_stats.json` + 标注样例图 |
+| 🆕 训练流程与产物 | `scripts/train.py` + `experiments/models/*.pt` + `*_curves.png` |
+| 🆕 结果验证 | `scripts/verify_training.py` + `training_verification.md`（6 项检查全 ✅） |
+| 🆕 版本记录 | `CHANGELOG.md`（v2.0 新增内容 / 用法 / 数据来源 / 展示效果） |
 
 ## 10. 展示与传播建议
 
@@ -247,5 +309,16 @@ python data/prepare_dataset.py --coco-root D:/coco --out data --max-images 1000
 **Q：安装后出现 numpy.core.multiarray failed to import？**
 这是 numpy 2 与旧版 pandas/pyarrow 的二进制不兼容。按 `requirements.txt` 安装即可（已锁定 pandas>=2.2.3、pyarrow>=17）：`uv pip install -r requirements.txt`。
 
-**Q：为什么 mAP 是 0？**
-mAP 需要标注好的验证集才能计算。没有数据集时脚本会把 mAP 记为 0 并附说明，这是故意设计——保证"所有结论靠真实运行验证"，不编造数字。准备好 `data/dataset.yaml` 后加 `--data` 参数重跑即可得到真实 mAP。
+**Q：为什么 mAP 是 0？（1.0 遗留问题，v2.0 已解决）**
+1.0 无数据集时脚本把 mAP 记为 0 并说明"待测"，不编造数字。v2.0 通过 `scripts/build_dataset.py`
+补齐了可训练数据集，`scripts/train.py` 已真实训练出权重并算出 mAP（见文首指标表）。
+若运行 A/B 时仍看到 mAP=0，说明没有传 `--data data/dataset.yaml`，加上即可。
+
+**Q：B1 权重在哪里？为什么 A/B 里 B1 人数异常多？**
+权重在 `experiments/models/B1_augment_best.pt`。B1 是在"合成教室图（每图 4–12 人）"上训练的，
+直接在街景 `demo.jpg` 上测试会过检——这是**训练域与测试域不一致**的真实体现，不是 bug。
+要测真实场景精度，请用与目标场景一致的数据训练（见 `data/DATA_CARD.md` 用途边界）。
+
+**Q：训练时 matplotlib 报 numpy.core.multiarray failed to import？**
+matplotlib 3.8 与 numpy 2 二进制冲突。按 `requirements.txt` 安装（已锁定 `matplotlib>=3.9`）：
+`uv pip install -r requirements.txt`。

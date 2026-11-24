@@ -1,0 +1,16 @@
+{
+  "name": "B1_augment",
+  "augment": "mosaic_strong",
+  "epochs": 12,
+  "imgsz": 416,
+  "batch": 8,
+  "train_seconds": 77.0,
+  "map50": 0.9942,
+  "map50_95": 0.731,
+  "precision": 0.999,
+  "recall": 0.9777,
+  "weights": "experiments\\models\\B1_augment_best.pt",
+  "loss_curve": "experiments\\results\\B1_augment_curves.png",
+  "results_csv": "runs\\train\\B1_augment\\results.csv",
+  "dataset_note": "指标基于 data/DATA_CARD.md 所述合成+真实对照数据集"
+}

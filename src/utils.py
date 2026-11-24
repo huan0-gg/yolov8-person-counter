@@ -18,6 +18,25 @@ def load_config(path: str | Path = "configs/config.yaml") -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
+def resolve_dataset_yaml(data: str | Path = "data/dataset.yaml") -> Path:
+    """生成一份 path 为绝对路径的临时 dataset.yaml，供训练/评估可靠读取。
+
+    YOLO 的 dataset.yaml 里 path 是相对项；不同工作目录会导致解析错位。
+    本函数保留仓库内的模板不变，只在运行时生成绝对路径副本。
+    """
+    src = Path(data).resolve()
+    if not src.exists():
+        raise FileNotFoundError(f"数据集配置不存在: {src}")
+    with src.open("r", encoding="utf-8") as f:
+        content = yaml.safe_load(f)
+    data_root = src.parent
+    content["path"] = str(data_root).replace("\\", "/")
+    out = data_root / "dataset_runtime.yaml"
+    with out.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(content, f, allow_unicode=True, sort_keys=False)
+    return out
+
+
 def set_seed(seed: int = 42) -> None:
     random.seed(seed)
     np.random.seed(seed)

@@ -1,0 +1,42 @@
+{
+  "name": "B1_augment",
+  "weights": "yolov8n.pt",
+  "data": "D:\\gg\\yolov8-person-counter\\data\\dataset_runtime.yaml",
+  "epochs": 12,
+  "batch": 8,
+  "imgsz": 416,
+  "device": "cpu",
+  "seed": 42,
+  "augment": "mosaic_strong",
+  "augment_kwargs": {
+    "mosaic": 1.0,
+    "copy_paste": 0.3,
+    "hsv_h": 0.03,
+    "hsv_s": 0.8,
+    "hsv_v": 0.5,
+    "degrees": 5.0,
+    "translate": 0.15,
+    "scale": 0.7,
+    "fliplr": 0.5
+  },
+  "patience": 0,
+  "config_snapshot": {
+    "model": {
+      "weights": "yolov8n.pt",
+      "imgsz": 960,
+      "conf": 0.12,
+      "iou": 0.45,
+      "device": "auto",
+      "classes": [
+        0
+      ],
+      "augment": false,
+      "nms_iou": 0.55
+    },
+    "roi": {
+      "count_mode": "center",
+      "overlap_threshold": 0.3,
+      "min_area_ratio": 0.002
+    }
+  }
+}
