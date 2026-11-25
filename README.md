@@ -1,9 +1,15 @@
-# YOLOv8 人员到岗统计与座位占用检测系统 · v2.2
+# YOLOv8 人员到岗统计与座位占用检测系统 · v2.3
 
 > 课程项目交付标准：**能看、能跑、能对比、能复述**
 > 用真实运行与实验验证支撑每一个结论，所有改进都留下可复核的证据。
 
-> ## 🆕 v2.2 升级（2026-11-24）：指定区域标注 + 检测误差实测下降
+> ## 🆕 v2.3 升级（2026-11-25）：别人不装环境也能打开
+> 三件事：**① 一条命令拿公网链接**（`python scripts/share.py`）；
+> **② GitHub Codespaces 一键运行**（`.devcontainer`，7860 端口已设为公开）；
+> **③ Docker 镜像**（CPU 版 torch，任何容器平台可部署）。
+> 检测逻辑未改动，v2.2 指标不变。详见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
+
+> ## v2.2 升级（2026-11-24）：指定区域标注 + 检测误差实测下降
 > 三件事：**① 结果图能标出"要管的区域"**（多边形/矩形，带区域内人数，区域外压暗可选）；
 > **② 检测逻辑重做后处理**（多尺度融合 + 嵌套框去重 + 放宽坐姿宽高比）；
 > **③ 补一套检测级评测**，把"误检/漏检"从形容词变成数字。
@@ -36,6 +42,28 @@
 > 所有数值来自真实运行，未手工填写。训练曲线：`experiments/results/*_curves.png`。
 
 基于 YOLOv8 的教室/会议室人员统计系统：自动检测画面中的人员，统计实时人数，并判断每个座位是否被占用。项目内置基线 A 与 3 个创新点的完整 A/B 实验流程，可一键生成对比表格和 3 条标准化创新表述。
+
+## 🌐 在线体验（不用装环境）
+
+| 方式 | 适合谁 | 有效期 |
+|---|---|---|
+| **GitHub Codespaces** 一键运行 | 评审/同学，从仓库直接跑起来 | 代码空间存活期间 |
+| `python scripts/share.py` | 自己机器上临时发个公网链接 | 进程存活期间 |
+| Docker 部署 | 长期演示 / 服务器 | 长期 |
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/huan0-gg/yolov8-person-counter)
+
+点上面的徽章 → **Create codespace**，容器会自动装依赖、自动起服务，
+**7860 端口已设为公开**（`visibility: public`），几分钟后端口面板给出的
+`https://<codespace>-7860.app.github.dev` 就是一个别人能直接打开的地址。
+
+本机想快速给别人看一眼，一条命令即可：
+
+```bash
+python scripts/share.py          # 输出 https://xxx.trycloudflare.com
+```
+
+三种方式的细节、公网摄像头限制、免费额度，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ## 0. 45 秒看完这个项目
 
@@ -223,8 +251,12 @@ uv pip install -r requirements.txt
 ### 5.2 能看：启动 Web 界面
 
 ```bash
-python app.py
+python app.py                          # 仅本机：http://127.0.0.1:7860
+python app.py --host 0.0.0.0           # 局域网/容器内可访问
+python scripts/share.py                # 顺便拿一个公网链接
 ```
+
+端口和监听地址也可用环境变量配置：`GRADIO_SERVER_NAME` / `GRADIO_SERVER_PORT` / `GRADIO_SHARE`。
 
 浏览器打开 `http://127.0.0.1:7860`。第一次用不用准备图片：在「图片检测」页选一张**示例图**
 （v2.2 起用 `assets/ai/` 下的 AI 生成场景图，不再依赖旧截图），点 **一键载入示例并统计**，

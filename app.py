@@ -303,5 +303,42 @@ def build_ui() -> gr.Blocks:
     return demo
 
 
+def _parse_args(argv: list[str] | None = None):
+    """启动参数：本地默认只监听回环地址；云端/Codespaces 用 --host 0.0.0.0。
+
+    也可用环境变量配置，方便 Docker / CI 直接起容器而不用改命令行：
+      GRADIO_SERVER_NAME  监听地址（默认 127.0.0.1）
+      GRADIO_SERVER_PORT  端口（默认 7860）
+      GRADIO_SHARE        置 1/true 时生成 gradio.live 临时公网链接
+    """
+    import argparse
+    import os
+
+    env_share = str(os.getenv("GRADIO_SHARE", "")).strip().lower() in {"1", "true", "yes", "on"}
+    parser = argparse.ArgumentParser(description="启动教室人员到岗统计 Web 界面")
+    parser.add_argument(
+        "--host",
+        default=os.getenv("GRADIO_SERVER_NAME", "127.0.0.1"),
+        help="监听地址，容器/云端用 0.0.0.0（默认 127.0.0.1）",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.getenv("GRADIO_SERVER_PORT", "7860")),
+        help="监听端口（默认 7860）",
+    )
+    parser.add_argument(
+        "--share",
+        dest="share",
+        action="store_true",
+        default=env_share,
+        help="生成 gradio.live 临时公网链接（约 72 小时有效）",
+    )
+    parser.add_argument("--no-share", dest="share", action="store_false", help="关闭公网链接")
+    return parser.parse_args(argv)
+
+
 if __name__ == "__main__":
-    build_ui().launch(server_name="127.0.0.1", server_port=7860, share=False)
+    args = _parse_args()
+    print(f"[app] 监听 http://{args.host}:{args.port}  share={args.share}", flush=True)
+    build_ui().launch(server_name=args.host, server_port=args.port, share=args.share)

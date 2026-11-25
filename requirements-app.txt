@@ -1,0 +1,11 @@
+# 只跑 Web 界面所需的最小依赖（云端 / Codespaces / Docker 用）
+# 训练、评测相关的 pandas / matplotlib / pycocotools 不在此列，见 requirements.txt
+#
+# 注意：torch 请先按 CPU 源单独安装，否则默认源会拉 2GB+ 的 CUDA 轮子：
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+ultralytics>=8.1.0
+opencv-python-headless>=4.9.0
+numpy>=2.0.0
+gradio>=4.0.0
+PyYAML>=6.0
+Pillow>=10.0.0

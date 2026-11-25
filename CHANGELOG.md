@@ -1,5 +1,36 @@
 # 更新日志（Changelog）
 
+## v2.3.0 — 2026-11-25
+
+> 主题：**让别人不用装环境也能打开这个项目**。
+> 启动参数可配置、加一条命令的公网隧道、加 GitHub Codespaces 与 Docker 两条云端路径。
+> 检测逻辑未改动，v2.2 的全部指标与测试结论保持不变。
+
+### 新增
+
+#### 1. 启动参数可配置（`app.py`）
+- 新增 `--host` / `--port` / `--share` / `--no-share`，并支持 `GRADIO_SERVER_NAME`、
+  `GRADIO_SERVER_PORT`、`GRADIO_SHARE` 三个环境变量。
+- 默认仍是 `127.0.0.1:7860`（本地安全默认），容器与云端用 `--host 0.0.0.0`。
+
+#### 2. 一键公网链接（`scripts/share.py`）
+- 自动复用已运行的服务（端口占用则不再起第二份模型），首次运行自动下载 `cloudflared`。
+- 建立 Cloudflare Quick Tunnel，打印 `https://xxx.trycloudflare.com` 并写入 `PUBLIC_URL.txt`（已 gitignore）。
+- 不使用 Gradio 自带 `--share`：它依赖 `cdn-media.huggingface.co`，本机网络不可达。
+
+#### 3. 云端交付路径
+- `.devcontainer/devcontainer.json`：Codespaces 一键创建，`7860` 端口 `visibility: public`，
+  `postCreate` 装依赖、`postStart` 自动拉起服务。
+- `scripts/dev_setup.sh` / `scripts/dev_start.sh`：幂等安装与启动（已装/已在跑就跳过）。
+- `Dockerfile` + `.dockerignore`：CPU 版 torch，`HEALTHCHECK` 探活，任何容器平台可用。
+- `requirements-app.txt`：只含界面运行所需依赖（不含训练/评测用的 pandas、matplotlib、pycocotools）。
+- `docs/DEPLOY.md`：三种方式的取舍、免费额度、公网摄像头限制、常见问题。
+
+### 实测
+
+- `python scripts/share.py` 端到端跑通，公网地址返回 HTTP 200（页面 109KB）；
+- Codespaces 配置为官方标准写法，端口已设为公开，无需改端口可见性。
+
 ## v2.2.0 — 2026-11-24
 
 > 主题：**把"要管的区域"画出来，把"误检/漏检"量出来**。
